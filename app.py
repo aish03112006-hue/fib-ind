@@ -225,12 +225,12 @@ st.caption("Kotak Neo live index feed • 5-minute swing detection • 15-minute
 
 with st.sidebar:
     st.header("Connection")
-    st.caption("Credentials stay in this running browser session; do not send them in chat.")
-    consumer_key = st.text_input("Kotak Neo Consumer Key", type="password")
-    mobile = st.text_input("Registered mobile (+91...)")
-    ucc = st.text_input("UCC")
-    totp = st.text_input("Current 6-digit TOTP", max_chars=6, type="password")
-    mpin = st.text_input("Trading MPIN", type="password")
+    st.caption("All Kotak Neo credentials are entered manually each session and are not saved by this scanner.")
+    consumer_key = st.text_input("Kotak Neo Consumer Key", type="password", autocomplete="off")
+    mobile = st.text_input("Registered mobile (+91...)", autocomplete="off")
+    ucc = st.text_input("UCC", autocomplete="off")
+    totp = st.text_input("Current 6-digit TOTP (not saved)", max_chars=6, type="password", autocomplete="off")
+    mpin = st.text_input("Trading MPIN (not saved)", type="password", autocomplete="off")
     st.divider()
     st.subheader("Indices")
     selected_labels = st.multiselect(
@@ -421,4 +421,4 @@ with st.expander("Strategy rules and limitations"):
     - This is an experimental signal tool, not a validated profitable strategy. Paper-test and backtest before risking money. It does not place, modify, or cancel orders.
     """)
 
-st.caption("Local-first app. Keep this dashboard private; never publish your API credentials or expose it to the public internet.")
+st.caption("Local-first app. Kotak credentials are manual-only and are not persisted by this scanner. Keep this dashboard private; never publish your API credentials or expose it to the public internet.")
