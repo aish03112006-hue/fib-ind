@@ -1,0 +1,2 @@
+Deployment refresh requested 2026-11-03.
+The current app.py uses manual-only Kotak Neo credentials and does not persist Consumer Key, mobile, UCC, TOTP, or Trading MPIN.
