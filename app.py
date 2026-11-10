@@ -3,7 +3,7 @@ from datetime import datetime, time as dtime
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
-from market import get_candles
+from market import get_candles, MarketDataError
 from strategy import enrich, backtest
 
 st.set_page_config(page_title='NIFTY • Kotak Neo Research', page_icon='📈', layout='wide')
@@ -38,7 +38,10 @@ if refresh:
             st.session_state['candles']=get_candles(key,symbol,interval,days)
             st.session_state['request']=(symbol,interval,days)
             st.session_state['fetched_at']=datetime.now().astimezone().isoformat(timespec='seconds')
-    except Exception as exc:
+    except MarketDataError as exc:
+        st.error(str(exc))
+        st.stop()
+    except Exception:
         st.error('Kotak data request failed. Check the private API key, instrument token, data entitlement and service availability.')
         st.stop()
 
