@@ -54,6 +54,8 @@ if st.session_state.get('request') != (symbol,interval,days):
     st.stop()
 
 raw=st.session_state['candles']
+if raw.attrs.get('rejected_candles', 0):
+    st.warning(f"Excluded {raw.attrs['rejected_candles']} invalid Kotak candles. The chart and backtest use valid rows only; missing intervals can affect results.")
 # The final candle may be in progress. Remove it unless its scheduled interval has elapsed.
 minutes={'5min':5,'10min':10,'15min':15,'30min':30,'60min':60}[interval]
 now=pd.Timestamp.now(tz='Asia/Kolkata')
