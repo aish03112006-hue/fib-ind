@@ -3,6 +3,10 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 
 
+class MarketDataError(RuntimeError):
+    """Only fixed messages and numeric HTTP/API codes may reach the UI."""
+
+
 def get_candles(consumer_key: str, neosymbol: str, interval: str, days: int) -> pd.DataFrame:
     if not consumer_key.strip():
         raise ValueError('Enter your Kotak Neo consumer key in the sidebar or Streamlit secrets.')
@@ -24,16 +28,21 @@ def get_candles(consumer_key: str, neosymbol: str, interval: str, days: int) -> 
                     'fromdate': start.isoformat(), 'todate': end.isoformat()},
             timeout=25, allow_redirects=False)
         if result.status_code != 200:
-            raise RuntimeError('Kotak rejected the market-data request.')
+            raise MarketDataError(f'Kotak market-data request returned HTTP {int(result.status_code)}. Verify the consumer token and market-data access.')
         response = result.json()
+    except MarketDataError:
+        raise
     except Exception:
-        raise RuntimeError('Kotak market data is unavailable; verify private configuration.') from None
+        raise MarketDataError('Kotak market data could not be reached or returned invalid JSON.') from None
     if not isinstance(response, dict):
         raise RuntimeError('Kotak returned an unexpected response.')
     data = response.get('data')
     candles = data.get('candles', []) if isinstance(data, dict) else []
     if not candles:
-        raise RuntimeError('Kotak returned no candles. Check instrument, key and entitlement.')
+        fault = response.get('fault')
+        code = fault.get('code') if isinstance(fault, dict) else None
+        suffix = f' API code {code}.' if type(code) is int else ''
+        raise MarketDataError('Kotak returned HTTP 200 without candles. Verify the instrument token and historical-data entitlement.' + suffix)
     df = pd.DataFrame(candles)
     if df.shape[1] < 6:
         raise RuntimeError('Unexpected candle columns from Kotak.')
