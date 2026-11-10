@@ -24,6 +24,14 @@ class DashboardTests(unittest.TestCase):
             self.assertFalse(req.call_args.kwargs['allow_redirects'])
             self.assertEqual(req.call_args.args[0],'https://mis.kotaksecurities.com/market-data/1.0/historical/details')
 
+    def test_invalid_candles_excluded(self):
+        rows=[['2026-11-02T09:15:00+0530',100,110,90,105,1000],
+              ['2026-11-02T09:30:00+0530',100,0,0,105,0]]
+        with patch('requests.get',return_value=Mock(status_code=200,json=lambda:{'data':{'candles':rows}})):
+            x=get_candles('test-key','nse_cm|test','15min',14)
+            self.assertEqual(len(x),1)
+            self.assertEqual(x.attrs['rejected_candles'],1)
+
     def test_error_does_not_expose_key(self):
         with patch('requests.get',side_effect=RuntimeError('test-secret')):
             with self.assertRaises(RuntimeError) as e: get_candles('test-secret','nse_cm|test','5min',14)
