@@ -57,6 +57,12 @@ def get_candles(consumer_key: str, neosymbol: str, interval: str, days: int) -> 
     df = df.dropna(subset=['timestamp','open','high','low','close']).drop_duplicates('timestamp').sort_values('timestamp')
     if df.empty:
         raise MarketDataError('Kotak returned no valid dated OHLC candles.')
-    if ((df.high < df[['open','close','low']].max(axis=1)) | (df.low > df[['open','close','high']].min(axis=1)) | (df[['open','high','low','close']] <= 0).any(axis=1)).any():
-        raise MarketDataError('Kotak returned inconsistent OHLC prices.')
-    return df.reset_index(drop=True)
+    invalid = ((df.high < df[['open','close','low']].max(axis=1)) |
+               (df.low > df[['open','close','high']].min(axis=1)) |
+               (df[['open','high','low','close']] <= 0).any(axis=1))
+    rejected = int(invalid.sum())
+    df = df.loc[~invalid].reset_index(drop=True)
+    if df.empty:
+        raise MarketDataError(f'Kotak returned {rejected} candles, all with invalid OHLC prices. Verify the instrument token.')
+    df.attrs['rejected_candles'] = rejected
+    return df
