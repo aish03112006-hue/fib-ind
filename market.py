@@ -35,7 +35,7 @@ def get_candles(consumer_key: str, neosymbol: str, interval: str, days: int) -> 
     except Exception:
         raise MarketDataError('Kotak market data could not be reached or returned invalid JSON.') from None
     if not isinstance(response, dict):
-        raise RuntimeError('Kotak returned an unexpected response.')
+        raise MarketDataError('Kotak returned an unexpected response shape.')
     data = response.get('data')
     candles = data.get('candles', []) if isinstance(data, dict) else []
     if not candles:
@@ -44,8 +44,10 @@ def get_candles(consumer_key: str, neosymbol: str, interval: str, days: int) -> 
         suffix = f' API code {code}.' if type(code) is int else ''
         raise MarketDataError('Kotak returned HTTP 200 without candles. Verify the instrument token and historical-data entitlement.' + suffix)
     df = pd.DataFrame(candles)
+    if df.shape[1] == 5:
+        df[5] = float('nan')
     if df.shape[1] < 6:
-        raise RuntimeError('Unexpected candle columns from Kotak.')
+        raise MarketDataError('Kotak returned an unsupported candle layout.')
     df = df.iloc[:, :6].copy()
     df.columns = ['timestamp', 'open', 'high', 'low', 'close', 'volume']
     df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True, errors='coerce').dt.tz_convert('Asia/Kolkata')
@@ -54,7 +56,7 @@ def get_candles(consumer_key: str, neosymbol: str, interval: str, days: int) -> 
     df = df.replace([float('inf'), -float('inf')], float('nan'))
     df = df.dropna(subset=['timestamp','open','high','low','close']).drop_duplicates('timestamp').sort_values('timestamp')
     if df.empty:
-        raise RuntimeError('No valid OHLC candles after parsing.')
+        raise MarketDataError('Kotak returned no valid dated OHLC candles.')
     if ((df.high < df[['open','close','low']].max(axis=1)) | (df.low > df[['open','close','high']].min(axis=1)) | (df[['open','high','low','close']] <= 0).any(axis=1)).any():
-        raise RuntimeError('Invalid OHLC data')
+        raise MarketDataError('Kotak returned inconsistent OHLC prices.')
     return df.reset_index(drop=True)
